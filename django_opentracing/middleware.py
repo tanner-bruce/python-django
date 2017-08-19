@@ -1,4 +1,5 @@
 from django.conf import settings 
+from jaeger_client import Config
 import opentracing
 try:
     # Django >= 1.10
@@ -18,10 +19,10 @@ class OpenTracingMiddleware(MiddlewareMixin):
         - Is it better to place all tracing info in the settings file, or to require a tracing.py file with configurations?
         - Also, better to have try/catch with empty tracer or just fail fast if there's no tracer specified
         '''
-        if hasattr(settings, 'OPENTRACING_TRACER'):
-            self._tracer = settings.OPENTRACING_TRACER 
-        else:
-            self._tracer = opentracing.Tracer()
+        tracer_config = settings.OPENTRACING_TRACER_CONFIG
+        service_name = settings.SERVICE_NAME
+        self._tracer = Config(config=tracer_config,
+                              service_name=service_name).initialize_tracer()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         # determine whether this middleware should be applied
