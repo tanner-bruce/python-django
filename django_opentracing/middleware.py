@@ -1,6 +1,7 @@
 from django.conf import settings 
 from jaeger_client import Config
 import opentracing
+from tracer import DjangoTracer
 
 try:
     # Django >= 1.10
@@ -19,15 +20,12 @@ class OpenTracingMiddleware(MiddlewareMixin):
         self.get_response = get_response
 
     def init_tracer(self):
-        return Config(config=settings.OPENTRACING_TRACER_CONFIG, service_name=settings.SERVICE_NAME).initialize_tracer()
+        print "Init tracer"
+        return DjangoTracer(Config(config=settings.OPENTRACING_TRACER_CONFIG, service_name=settings.SERVICE_NAME).initialize_tracer())
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if not self._tracer._trace_all:
-            print 'Tracing not enabled - leaving'
-            return None
-
         if (self._tracer == None):
-            self._tracer = init_tracer()
+            self._tracer = self.init_tracer()
 
         if hasattr(settings, 'OPENTRACING_TRACED_ATTRIBUTES'):
             traced_attributes = getattr(settings, 'OPENTRACING_TRACED_ATTRIBUTES')
