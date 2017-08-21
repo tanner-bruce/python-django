@@ -16,6 +16,7 @@ class OpenTracingMiddleware(MiddlewareMixin):
     '''
     def __init__(self, get_response=None):
         self._tracer = None
+        self.get_response = get_response
 
     def init_tracer(self):
         return Config(config=settings.OPENTRACING_TRACER_CONFIG, service_name=settings.SERVICE_NAME).initialize_tracer()
