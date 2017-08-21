@@ -1,6 +1,7 @@
 from django.conf import settings 
 from jaeger_client import Config
 import opentracing
+
 try:
     # Django >= 1.10
     from django.utils.deprecation import MiddlewareMixin
@@ -14,26 +15,22 @@ class OpenTracingMiddleware(MiddlewareMixin):
     __init__() is only called once, no arguments, when the Web server responds to the first request
     '''
     def __init__(self, get_response=None):
-        '''
-        TODO: ANSWER Qs
-        - Is it better to place all tracing info in the settings file, or to require a tracing.py file with configurations?
-        - Also, better to have try/catch with empty tracer or just fail fast if there's no tracer specified
-        '''
-        tracer_config = settings.OPENTRACING_TRACER_CONFIG
-        service_name = settings.SERVICE_NAME
-        self._tracer = Config(config=tracer_config,
-                              service_name=service_name).initialize_tracer()
+        self._tracer = None
+
+    def init_tracer(self):
+        return Config(config=settings.OPENTRACING_TRACER_CONFIG, service_name=settings.SERVICE_NAME).initialize_tracer()
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        # determine whether this middleware should be applied
-        # NOTE: if tracing is on but not tracing all requests, then the tracing occurs
-        # through decorator functions rather than middleware
         if not self._tracer._trace_all:
+            print 'Tracing not enabled - leaving'
             return None
+
+        if (self._tracer == None):
+            self._tracer = init_tracer()
 
         if hasattr(settings, 'OPENTRACING_TRACED_ATTRIBUTES'):
             traced_attributes = getattr(settings, 'OPENTRACING_TRACED_ATTRIBUTES')
-        else: 
+        else:
             traced_attributes = []
         self._tracer._apply_tracing(request, view_func, traced_attributes)
 
